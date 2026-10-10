@@ -71,6 +71,8 @@ jobs:
           build-args: MODELS=u2netp
       - name: Smoke test the image
         run: |
+          # Pillow on the runner only builds the sample and checks the result.
+          pip install pillow
           docker run -d --name bgremover-ci -p 3001:3001 \
             -e BGREMOVER_MODELS=u2netp -e BGREMOVER_DEFAULT_MODEL=u2netp bgremover:ci
           for i in $(seq 1 60); do
