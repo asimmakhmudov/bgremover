@@ -1,0 +1,80 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bgremover"
+dynamic = ["version"]
+description = "Remove image backgrounds with ONNX segmentation models. Library, CLI and HTTP API."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Asim Mahmudov" }]
+keywords = ["background-removal", "segmentation", "onnx", "u2net", "isnet", "birefnet"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+dependencies = [
+    "numpy>=1.24",
+    "pillow>=10.0",
+    "onnxruntime>=1.16",
+]
+
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "python-multipart>=0.0.9",
+]
+dev = [
+    "bgremover[api]",
+    "pytest>=8.0",
+    "httpx>=0.27",
+    "ruff>=0.5",
+    "build>=1.2",
+    "twine>=5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/asimmakhmudov/bgremover"
+Issues = "https://github.com/asimmakhmudov/bgremover/issues"
+Documentation = "https://github.com/asimmakhmudov/bgremover#readme"
+Source = "https://github.com/asimmakhmudov/bgremover"
+
+[project.scripts]
+bgremover = "bgremover.cli:main"
+
+[tool.hatch.version]
+path = "src/bgremover/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bgremover"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/bgremover", "tests", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Model tests download real weights, so they are opt-in: `pytest -m model`.
+addopts = "-m 'not model'"
+markers = [
+    "model: downloads and runs a real ONNX model (needs network)",
+]
+filterwarnings = ["error::DeprecationWarning"]

@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: |
+          ruff check src tests
+          ruff format --check src tests
+
+      - name: Test
+        run: pytest -q
+
+  model-test:
+    # The only job that downloads real weights (~5 MB).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: pytest -q -m model
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check dist/*
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: bgremover:ci
+          # The small model keeps the CI build quick.
+          build-args: MODELS=u2netp
+      - name: Smoke test the image
+        run: |
+          docker run -d --name bgremover-ci -p 3001:3001 \
+            -e BGREMOVER_MODELS=u2netp -e BGREMOVER_DEFAULT_MODEL=u2netp bgremover:ci
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:3001/health && break
+            sleep 2
+          done
+          python -c "
+          from PIL import Image
+          Image.new('RGB', (64, 64), (200, 30, 30)).save('sample.png')
+          "
+          curl -sf -X POST -F "image=@sample.png" \
+            http://127.0.0.1:3001/remove-background --output out.png
+          python -c "
+          from PIL import Image
+          image = Image.open('out.png')
+          assert image.mode == 'RGBA', image.mode
+          print('image smoke test OK:', image.size, image.mode)
+          "
+          docker rm -f bgremover-ci
