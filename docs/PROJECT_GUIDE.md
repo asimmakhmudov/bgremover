@@ -3,7 +3,8 @@
 My own notes on how this project is put together, how to run it, and how to
 release it. The public-facing docs are in [`README.md`](../README.md).
 
-- Package name: **`bgremover`** (PyPI); import name `bgremover`; CLI `bgremover`
+- PyPI name: **`bgremover-onnx`** (plain `bgremover` was rejected as too similar
+  to the existing `bg-remover`); import name `bgremover`; CLI `bgremover`
 - Repo: https://github.com/asimmakhmudov/bgremover
 - Version lives in one place: `src/bgremover/__init__.py` (`__version__`)
 - Python 3.10+; build backend: hatchling
@@ -16,9 +17,9 @@ A background remover with three entry points over one core:
 
 | Entry point | Install | Used as |
 | --- | --- | --- |
-| Library | `pip install bgremover` | `from bgremover import remove` |
+| Library | `pip install bgremover-onnx` | `from bgremover import remove` |
 | CLI | same | `bgremover remove photo.jpg` |
-| HTTP API | `pip install "bgremover[api]"` | `bgremover serve` (FastAPI + uvicorn) |
+| HTTP API | `pip install "bgremover-onnx[api]"` | `bgremover serve` (FastAPI + uvicorn) |
 
 It runs pretrained segmentation models (U²-Net, IS-Net, BiRefNet) exported to
 ONNX. The inference code is my own: numpy and Pillow do the image math and
@@ -166,7 +167,7 @@ curl -X POST -H "Content-Type: application/json" \
 ### HTTP API (production, without Docker)
 
 ```bash
-pip install "bgremover[api]"
+pip install "bgremover-onnx[api]"
 export BGREMOVER_PRELOAD=true BGREMOVER_MAX_CONCURRENCY=2
 bgremover serve --host 0.0.0.0 --port 3001 --workers 2
 ```
@@ -237,8 +238,8 @@ One upload to PyPI makes the package available to **both** pip and uv, since uv
 installs from PyPI too:
 
 ```bash
-pip install bgremover
-uv add bgremover        # or: uv pip install bgremover / uvx bgremover
+pip install bgremover-onnx
+uv add bgremover-onnx        # or: uv pip install bgremover-onnx / uvx --from bgremover-onnx bgremover
 ```
 
 ### One-time setup
@@ -246,9 +247,10 @@ uv add bgremover        # or: uv pip install bgremover / uvx bgremover
 1. Create accounts on https://pypi.org and https://test.pypi.org, and turn on 2FA
    (PyPI requires it).
 2. Pick **one** way to authenticate:
-   - **Trusted Publishing (recommended, no tokens).** On PyPI, go to *Your account ->
-     Publishing -> Add a pending publisher*: owner `asimmakhmudov`, repo
-     `bgremover`, workflow `publish.yml`, environment `pypi`. On GitHub,
+   - **Trusted Publishing (recommended, no tokens).** On PyPI, open
+     https://pypi.org/manage/project/bgremover-onnx/settings/publishing/ and add a
+     GitHub publisher: owner `asimmakhmudov`, repo `bgremover`, workflow
+     `publish.yml`, environment `pypi`. On GitHub,
      go to *Settings -> Environments* and create an environment named `pypi`.
      After this, publishing a GitHub release uploads to PyPI automatically.
    - **API token (manual uploads).** PyPI -> *Account settings -> API tokens*. Use
@@ -300,8 +302,8 @@ Things to remember:
 ### Verify after a release
 
 ```bash
-uvx --refresh bgremover --version
-uvx --refresh --from "bgremover[api]" bgremover serve --port 3001
+uvx --refresh --from bgremover-onnx bgremover --version
+uvx --refresh --from "bgremover-onnx[api]" bgremover serve --port 3001
 pip install -U bgremover && python -c "import bgremover; print(bgremover.__version__)"
 ```
 
@@ -323,7 +325,7 @@ pip install -U bgremover && python -c "import bgremover; print(bgremover.__versi
 
 | Symptom | Cause / fix |
 | --- | --- |
-| `error: the API needs the extra dependencies` | `pip install "bgremover[api]"` |
+| `error: the API needs the extra dependencies` | `pip install "bgremover-onnx[api]"` |
 | `DownloadError ... SHA-256 mismatch` | Bad or partial download. Run `bgremover download --check <m>`, then download it again |
 | First request is very slow | Weights are downloading. Pre-fetch with `bgremover download`, set `BGREMOVER_PRELOAD=true`, or bake them into Docker |
 | URL route returns 400 "refusing to fetch ... non-public address" | SSRF guard working as intended. Only set `BGREMOVER_ALLOW_PRIVATE_URLS=true` in local dev |

@@ -257,7 +257,7 @@ def _cmd_serve(args: argparse.Namespace) -> int:
         import uvicorn
     except ImportError:
         print(
-            'error: the API needs the extra dependencies: pip install "bgremover[api]"',
+            'error: the API needs the extra dependencies: pip install "bgremover-onnx[api]"',
             file=sys.stderr,
         )
         return 1

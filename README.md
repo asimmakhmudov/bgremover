@@ -1,7 +1,7 @@
 # bgremover
 
-[![PyPI](https://img.shields.io/pypi/v/bgremover.svg)](https://pypi.org/project/bgremover/)
-[![Python](https://img.shields.io/pypi/pyversions/bgremover.svg)](https://pypi.org/project/bgremover/)
+[![PyPI](https://img.shields.io/pypi/v/bgremover-onnx.svg)](https://pypi.org/project/bgremover-onnx/)
+[![Python](https://img.shields.io/pypi/pyversions/bgremover-onnx.svg)](https://pypi.org/project/bgremover-onnx/)
 [![CI](https://github.com/asimmakhmudov/bgremover/actions/workflows/ci.yml/badge.svg)](https://github.com/asimmakhmudov/bgremover/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/asimmakhmudov/bgremover/blob/master/LICENSE)
 
@@ -25,19 +25,22 @@ with open("photo.jpg", "rb") as fh:
 With pip:
 
 ```bash
-pip install bgremover            # library + CLI
-pip install "bgremover[api]"     # also the HTTP API
+pip install bgremover-onnx            # library + CLI
+pip install "bgremover-onnx[api]"     # also the HTTP API
 ```
 
 With [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add bgremover                 # add to a uv project
-uv add "bgremover[api]"
-uv pip install bgremover         # into the active environment
-uvx bgremover remove photo.jpg   # run the CLI without installing it
-uvx --from "bgremover[api]" bgremover serve   # run the API without installing it
+uv add bgremover-onnx                 # add to a uv project
+uv add "bgremover-onnx[api]"
+uv pip install bgremover-onnx         # into the active environment
+uvx --from bgremover-onnx bgremover remove photo.jpg   # run the CLI without installing it
+uvx --from "bgremover-onnx[api]" bgremover serve   # run the API without installing it
 ```
+
+The package is published on PyPI as `bgremover-onnx`; you still import it as
+`bgremover` and run the `bgremover` command.
 
 Python 3.10 or newer. Model weights are downloaded on first use and cached in
 `~/.cache/bgremover` (override with `BGREMOVER_HOME`).
@@ -139,7 +142,7 @@ bgremover serve --port 3001                       # run the HTTP API
 ## HTTP API
 
 ```bash
-pip install "bgremover[api]"
+pip install "bgremover-onnx[api]"
 bgremover serve --port 3001          # docs at http://localhost:3001/docs
 ```
 

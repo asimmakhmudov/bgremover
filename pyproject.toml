@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bgremover"
+name = "bgremover-onnx"
 dynamic = ["version"]
 description = "Remove image backgrounds with ONNX segmentation models. Library, CLI and HTTP API."
 readme = "README.md"
@@ -37,7 +37,7 @@ api = [
     "python-multipart>=0.0.9",
 ]
 dev = [
-    "bgremover[api]",
+    "bgremover-onnx[api]",
     "pytest>=8.0",
     "httpx>=0.27",
     "ruff>=0.5",
