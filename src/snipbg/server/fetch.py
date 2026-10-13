@@ -17,7 +17,7 @@ from urllib.parse import urljoin, urlsplit, urlunsplit
 
 _ALLOWED_SCHEMES = frozenset({"http", "https"})
 _CHUNK = 64 * 1024
-_USER_AGENT = "bgremover (+https://github.com/asimmakhmudov/bgremover)"
+_USER_AGENT = "snipbg (+https://github.com/asimmakhmudov/snipbg)"
 
 
 class FetchError(ValueError):

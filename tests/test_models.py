@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from bgremover.models import (
+from snipbg.models import (
     DEFAULT_MODEL,
     MODELS,
     ModelSpec,
@@ -45,7 +45,7 @@ def test_get_spec_defaults_and_rejects_unknown():
 
 
 def test_url_follows_the_base_url_override(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("BGREMOVER_MODEL_BASE_URL", "https://mirror.example/weights/")
+    monkeypatch.setenv("SNIPBG_MODEL_BASE_URL", "https://mirror.example/weights/")
     assert get_spec("u2netp").url == "https://mirror.example/weights/u2netp.onnx"
 
 
@@ -59,7 +59,7 @@ def test_size_mb_is_derived():
 
 
 def test_model_base_url_has_no_trailing_slash(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("BGREMOVER_MODEL_BASE_URL", "https://example.com/x///")
+    monkeypatch.setenv("SNIPBG_MODEL_BASE_URL", "https://example.com/x///")
     assert model_base_url() == "https://example.com/x"
 
 
@@ -79,8 +79,8 @@ def test_models_import_without_third_party_packages():
                     raise ImportError("blocked: " + name)
                 return None
         sys.meta_path.insert(0, Blocker())
-        from bgremover.download import ensure_model, cache_dir
-        from bgremover.models import get_spec
+        from snipbg.download import ensure_model, cache_dir
+        from snipbg.models import get_spec
         print(get_spec("u2netp").filename)
         """
     )

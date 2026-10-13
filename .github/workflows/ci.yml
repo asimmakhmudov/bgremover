@@ -66,15 +66,15 @@ jobs:
           context: .
           push: false
           load: true
-          tags: bgremover:ci
+          tags: snipbg:ci
           # The small model keeps the CI build quick.
           build-args: MODELS=u2netp
       - name: Smoke test the image
         run: |
           # Pillow on the runner only builds the sample and checks the result.
           pip install pillow
-          docker run -d --name bgremover-ci -p 3001:3001 \
-            -e BGREMOVER_MODELS=u2netp -e BGREMOVER_DEFAULT_MODEL=u2netp bgremover:ci
+          docker run -d --name snipbg-ci -p 3001:3001 \
+            -e SNIPBG_MODELS=u2netp -e SNIPBG_DEFAULT_MODEL=u2netp snipbg:ci
           for i in $(seq 1 60); do
             curl -sf http://127.0.0.1:3001/health && break
             sleep 2
@@ -91,4 +91,4 @@ jobs:
           assert image.mode == 'RGBA', image.mode
           print('image smoke test OK:', image.size, image.mode)
           "
-          docker rm -f bgremover-ci
+          docker rm -f snipbg-ci

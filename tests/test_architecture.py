@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-SOURCE = Path(__file__).resolve().parent.parent / "src" / "bgremover"
+SOURCE = Path(__file__).resolve().parent.parent / "src" / "snipbg"
 
 
 def _imported_modules(path: Path) -> set[str]:
@@ -46,7 +46,7 @@ def test_no_rembg_anywhere():
 
 
 def test_the_core_library_never_imports_the_server():
-    """Rule 2: bgremover.server is optional and must stay that way."""
+    """Rule 2: snipbg.server is optional and must stay that way."""
     for path in _core_modules():
         tree = ast.parse(path.read_text())
         for node in ast.walk(tree):
@@ -55,16 +55,16 @@ def test_the_core_library_never_imports_the_server():
                     pytest.fail(f"{path.name} imports {node.module}")
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    assert "bgremover.server" not in alias.name, path.name
+                    assert "snipbg.server" not in alias.name, path.name
 
 
 def test_importing_the_core_library_does_not_pull_in_fastapi():
     code = textwrap.dedent(
         """
         import sys
-        import bgremover
-        from bgremover import Remover, remove
-        from bgremover.session import get_remover
+        import snipbg
+        from snipbg import Remover, remove
+        from snipbg.session import get_remover
         loaded = [m for m in sys.modules if m.split(".")[0] in {"fastapi", "starlette", "uvicorn"}]
         assert not loaded, loaded
         print("clean")
@@ -105,7 +105,7 @@ def test_processing_stays_pure():
 
 def test_the_legacy_routes_still_exist():
     """Rule 6: old Node.js API clients depend on these."""
-    from bgremover.server.app import create_app
+    from snipbg.server.app import create_app
 
     # The OpenAPI schema, not app.routes: newer FastAPI nests included routers.
     paths = set(create_app().openapi()["paths"])
@@ -114,8 +114,8 @@ def test_the_legacy_routes_still_exist():
 
 def test_the_server_keeps_its_safety_rails():
     """Rule 7: these protections must not be dropped."""
-    from bgremover.server import app as app_module
-    from bgremover.server import config, fetch
+    from snipbg.server import app as app_module
+    from snipbg.server import config, fetch
 
     assert "max_upload_bytes" in config.Settings.__dataclass_fields__
     assert "allowed_models" in config.Settings.__dataclass_fields__
@@ -129,8 +129,8 @@ def test_the_server_keeps_its_safety_rails():
 
 def test_default_served_models_are_small_enough():
     """Rule 5: nothing above ~250 MB belongs in the server's default list."""
-    from bgremover.models import MODELS
-    from bgremover.server.config import DEFAULT_ALLOWED_MODELS
+    from snipbg.models import MODELS
+    from snipbg.server.config import DEFAULT_ALLOWED_MODELS
 
     for name in DEFAULT_ALLOWED_MODELS:
         assert MODELS[name].size_mb < 250, f"{name} is too large to serve by default"

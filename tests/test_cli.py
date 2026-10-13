@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from bgremover.cli import main
-from bgremover.images import load_image
+from snipbg.cli import main
+from snipbg.images import load_image
 
 
 @pytest.fixture
@@ -112,7 +112,7 @@ def test_version_flag(capsys):
     with pytest.raises(SystemExit) as excinfo:
         main(["--version"])
     assert excinfo.value.code == 0
-    assert "bgremover" in capsys.readouterr().out
+    assert "snipbg" in capsys.readouterr().out
 
 
 def test_no_command_is_an_error():

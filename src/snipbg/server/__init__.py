@@ -1,4 +1,4 @@
-"""Optional HTTP API. Install with ``pip install "bgremover-onnx[api]"``.
+"""Optional HTTP API. Install with ``pip install "snipbg[api]"``.
 
 This subpackage is never imported by the core library.
 """

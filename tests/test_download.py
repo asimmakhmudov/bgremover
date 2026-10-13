@@ -8,8 +8,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from bgremover import download as dl
-from bgremover.models import ModelSpec
+from snipbg import download as dl
+from snipbg.models import ModelSpec
 
 PAYLOAD = b"fake onnx weights" * 1000
 DIGEST = hashlib.sha256(PAYLOAD).hexdigest()
@@ -49,19 +49,19 @@ def server():
 
 @pytest.fixture
 def local_spec(server, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("BGREMOVER_MODEL_BASE_URL", server)
+    monkeypatch.setenv("SNIPBG_MODEL_BASE_URL", server)
     return ModelSpec("local", "good.onnx", DIGEST, len(PAYLOAD), (32, 32))
 
 
-def test_cache_dir_follows_bgremover_home(tmp_path, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("BGREMOVER_HOME", str(tmp_path / "models"))
+def test_cache_dir_follows_snipbg_home(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("SNIPBG_HOME", str(tmp_path / "models"))
     assert dl.cache_dir() == tmp_path / "models"
 
 
 def test_cache_dir_falls_back_to_xdg(tmp_path, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.delenv("BGREMOVER_HOME", raising=False)
+    monkeypatch.delenv("SNIPBG_HOME", raising=False)
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    assert dl.cache_dir() == tmp_path / "bgremover"
+    assert dl.cache_dir() == tmp_path / "snipbg"
 
 
 def test_download_writes_and_verifies(local_spec):
@@ -131,7 +131,7 @@ def test_remove_cached_and_clear_cache(local_spec):
 
 
 def test_a_spec_without_a_digest_is_accepted(server, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("BGREMOVER_MODEL_BASE_URL", server)
+    monkeypatch.setenv("SNIPBG_MODEL_BASE_URL", server)
     spec = ModelSpec("nodigest", "good.onnx", "", len(PAYLOAD), (32, 32))
     assert dl.download_model(spec).read_bytes() == PAYLOAD
     assert dl.verify_model(spec) is True

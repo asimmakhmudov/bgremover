@@ -1,10 +1,10 @@
-"""bgremover - remove image backgrounds with ONNX segmentation models.
+"""snipbg - remove image backgrounds with ONNX segmentation models.
 
-    from bgremover import remove
+    from snipbg import remove
     png_bytes = remove(open("photo.jpg", "rb").read())
 
-Attributes are resolved lazily so that ``bgremover.models`` and
-``bgremover.download`` stay importable without numpy, Pillow or onnxruntime
+Attributes are resolved lazily so that ``snipbg.models`` and
+``snipbg.download`` stay importable without numpy, Pillow or onnxruntime
 installed (the Docker model stage relies on this).
 """
 
@@ -34,16 +34,16 @@ if TYPE_CHECKING:
     from .session import Remover, get_remover, remove
 
 _LAZY: dict[str, str] = {
-    "DEFAULT_MODEL": "bgremover.models",
-    "MODELS": "bgremover.models",
-    "ModelSpec": "bgremover.models",
-    "list_models": "bgremover.models",
-    "DownloadError": "bgremover.download",
-    "cache_dir": "bgremover.download",
-    "ensure_model": "bgremover.download",
-    "Remover": "bgremover.session",
-    "get_remover": "bgremover.session",
-    "remove": "bgremover.session",
+    "DEFAULT_MODEL": "snipbg.models",
+    "MODELS": "snipbg.models",
+    "ModelSpec": "snipbg.models",
+    "list_models": "snipbg.models",
+    "DownloadError": "snipbg.download",
+    "cache_dir": "snipbg.download",
+    "ensure_model": "snipbg.download",
+    "Remover": "snipbg.session",
+    "get_remover": "snipbg.session",
+    "remove": "snipbg.session",
 }
 
 

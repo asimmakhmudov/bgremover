@@ -3,14 +3,17 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bgremover-onnx"
+name = "snipbg"
 dynamic = ["version"]
 description = "Remove image backgrounds with ONNX segmentation models. Library, CLI and HTTP API."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Asim Mahmudov" }]
-keywords = ["background-removal", "segmentation", "onnx", "u2net", "isnet", "birefnet"]
+keywords = [
+    "background-removal", "remove-background", "background-remover",
+    "cutout", "transparent", "segmentation", "onnx", "u2net", "isnet", "birefnet",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -37,7 +40,7 @@ api = [
     "python-multipart>=0.0.9",
 ]
 dev = [
-    "bgremover-onnx[api]",
+    "snipbg[api]",
     "pytest>=8.0",
     "httpx>=0.27",
     "ruff>=0.5",
@@ -46,22 +49,22 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/asimmakhmudov/bgremover"
-Issues = "https://github.com/asimmakhmudov/bgremover/issues"
-Documentation = "https://github.com/asimmakhmudov/bgremover#readme"
-Source = "https://github.com/asimmakhmudov/bgremover"
+Homepage = "https://github.com/asimmakhmudov/snipbg"
+Issues = "https://github.com/asimmakhmudov/snipbg/issues"
+Documentation = "https://github.com/asimmakhmudov/snipbg#readme"
+Source = "https://github.com/asimmakhmudov/snipbg"
 
 [project.scripts]
-bgremover = "bgremover.cli:main"
+snipbg = "snipbg.cli:main"
 
 [tool.hatch.version]
-path = "src/bgremover/__init__.py"
+path = "src/snipbg/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/bgremover"]
+packages = ["src/snipbg"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/bgremover", "tests", "README.md", "LICENSE", "pyproject.toml"]
+include = ["src/snipbg", "tests", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.ruff]
 line-length = 100

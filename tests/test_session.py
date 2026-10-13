@@ -8,10 +8,10 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from bgremover import remove
-from bgremover.images import load_image
-from bgremover.models import get_spec
-from bgremover.session import Remover, clear_removers, get_remover
+from snipbg import remove
+from snipbg.images import load_image
+from snipbg.models import get_spec
+from snipbg.session import Remover, clear_removers, get_remover
 
 
 def _alpha(image: Image.Image) -> np.ndarray:

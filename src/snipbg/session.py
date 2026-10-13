@@ -19,15 +19,15 @@ _CACHE_LOCK = threading.Lock()
 
 
 def _default_providers() -> list[str] | None:
-    """Execution providers from ``BGREMOVER_PROVIDERS``, else onnxruntime's own."""
-    raw = os.environ.get("BGREMOVER_PROVIDERS", "").strip()
+    """Execution providers from ``SNIPBG_PROVIDERS``, else onnxruntime's own."""
+    raw = os.environ.get("SNIPBG_PROVIDERS", "").strip()
     if not raw:
         return None
     return [name.strip() for name in raw.split(",") if name.strip()]
 
 
 def _default_threads() -> int | None:
-    raw = os.environ.get("BGREMOVER_NUM_THREADS", "").strip()
+    raw = os.environ.get("SNIPBG_NUM_THREADS", "").strip()
     return int(raw) if raw.isdigit() and int(raw) > 0 else None
 
 
