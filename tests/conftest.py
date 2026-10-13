@@ -11,8 +11,8 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from bgremover.models import ModelSpec, get_spec
-from bgremover.session import Remover, clear_removers
+from snipbg.models import ModelSpec, get_spec
+from snipbg.session import Remover, clear_removers
 
 
 class _FakeInput:
@@ -72,7 +72,7 @@ def isolated_cache(request: pytest.FixtureRequest, tmp_path, monkeypatch: pytest
     repeated on every run.
     """
     if request.node.get_closest_marker("model") is None:
-        monkeypatch.setenv("BGREMOVER_HOME", str(tmp_path / "cache"))
+        monkeypatch.setenv("SNIPBG_HOME", str(tmp_path / "cache"))
 
 
 @pytest.fixture
@@ -85,7 +85,7 @@ def red_blue_image() -> Image.Image:
 
 @pytest.fixture
 def red_blue_png(red_blue_image: Image.Image) -> bytes:
-    from bgremover.images import encode_image
+    from snipbg.images import encode_image
 
     return encode_image(red_blue_image, "PNG")
 

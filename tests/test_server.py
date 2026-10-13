@@ -8,9 +8,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pytest
 from fastapi.testclient import TestClient
 
-from bgremover.images import load_image
-from bgremover.server.app import create_app
-from bgremover.server.config import Settings
+from snipbg.images import load_image
+from snipbg.server.app import create_app
+from snipbg.server.config import Settings
 
 pytestmark = pytest.mark.usefixtures("fake_onnx")
 
@@ -199,7 +199,7 @@ def loopback_client(monkeypatch: pytest.MonkeyPatch):
     This lets the local test server stand in for a public host while every other
     address class is still judged by the production logic.
     """
-    from bgremover.server import fetch
+    from snipbg.server import fetch
 
     original = fetch._is_public
 

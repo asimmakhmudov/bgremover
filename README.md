@@ -1,110 +1,113 @@
-# bgremover
+# snipbg
 
-[![PyPI](https://img.shields.io/pypi/v/bgremover-onnx.svg)](https://pypi.org/project/bgremover-onnx/)
-[![Python](https://img.shields.io/pypi/pyversions/bgremover-onnx.svg)](https://pypi.org/project/bgremover-onnx/)
-[![CI](https://github.com/asimmakhmudov/bgremover/actions/workflows/ci.yml/badge.svg)](https://github.com/asimmakhmudov/bgremover/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/asimmakhmudov/bgremover/blob/master/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/snipbg.svg)](https://pypi.org/project/snipbg/)
+[![Python](https://img.shields.io/pypi/pyversions/snipbg.svg)](https://pypi.org/project/snipbg/)
+[![CI](https://github.com/asimmakhmudov/snipbg/actions/workflows/ci.yml/badge.svg)](https://github.com/asimmakhmudov/snipbg/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/asimmakhmudov/snipbg/blob/master/LICENSE)
 
-Remove image backgrounds with pretrained ONNX segmentation models — as a Python
-library, a command line tool, or an HTTP API.
+**Remove image backgrounds locally** with pretrained ONNX segmentation models
+(U²-Net, IS-Net, BiRefNet). Use it as a Python library, a command line tool, or
+a self-hosted HTTP API. One name everywhere: `pip install snipbg`,
+`import snipbg`, run `snipbg`.
 
-It runs U²-Net, IS-Net and BiRefNet with its own inference code: numpy and
-Pillow for the image math, onnxruntime for the model. There is no `rembg`
-dependency. (The weight files are hosted on rembg's releases page, which is the
-only thing taken from that project.)
+```bash
+pip install snipbg
+snipbg remove photo.jpg          # -> photo_nobg.png
+```
 
 ```python
-from bgremover import remove
+from snipbg import remove
 
 with open("photo.jpg", "rb") as fh:
     png = remove(fh.read())
 ```
 
+- **Small dependency set**: numpy, Pillow and onnxruntime. No `rembg`, no PyTorch.
+- **Runs offline** after the first download. Weights are SHA-256 checked and cached.
+- **Same type in, same type out**: bytes, file paths, PIL images and numpy arrays.
+- **API you can deploy**: FastAPI server with an SSRF-safe URL route, a bounded
+  worker pool and a Docker image with the weights baked in.
+
+## Contents
+
+- [Install](#install)
+- [Command line](#command-line)
+- [Python library](#python-library)
+- [HTTP API](#http-api)
+- [Models](#models)
+- [Docker](#docker)
+- [Configuration](#configuration)
+- [How it works](#how-it-works)
+- [Development](#development)
+- [License](#license)
+
 ## Install
 
-With pip:
+Python 3.10 or newer.
 
 ```bash
-pip install bgremover-onnx            # library + CLI
-pip install "bgremover-onnx[api]"     # also the HTTP API
+pip install snipbg            # library + CLI
+pip install "snipbg[api]"     # also the HTTP API
 ```
 
 With [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add bgremover-onnx                 # add to a uv project
-uv add "bgremover-onnx[api]"
-uv pip install bgremover-onnx         # into the active environment
-uvx --from bgremover-onnx bgremover remove photo.jpg   # run the CLI without installing it
-uvx --from "bgremover-onnx[api]" bgremover serve   # run the API without installing it
+uv add snipbg                              # add to a uv project
+uv add "snipbg[api]"
+uvx snipbg remove photo.jpg                # run the CLI without installing it
+uvx --from "snipbg[api]" snipbg serve      # run the API without installing it
 ```
 
-The package is published on PyPI as `bgremover-onnx`; you still import it as
-`bgremover` and run the `bgremover` command.
+Model weights are downloaded the first time a model is used and cached in
+`~/.cache/snipbg`. Set `SNIPBG_HOME` to cache them somewhere else.
 
-Python 3.10 or newer. Model weights are downloaded on first use and cached in
-`~/.cache/bgremover` (override with `BGREMOVER_HOME`).
+## Command line
 
-## Project structure
+```bash
+snipbg remove photo.jpg                          # -> photo_nobg.png
+snipbg remove photo.jpg -o out.png --refine --trim
+snipbg remove *.jpg -o cutouts/ -m isnet-general-use
+snipbg remove photo.jpg --bg white -o flat.jpg   # flat background instead of transparency
+snipbg remove photo.jpg --only-mask -o mask.png
+cat photo.jpg | snipbg remove - > out.png        # stdin -> stdout
 
-```
-bgremover/
-├── src/bgremover/
-│   ├── __init__.py        Public API, resolved lazily (remove, Remover, MODELS, ...)
-│   ├── models.py          Model registry: URL, SHA-256, input size, normalisation
-│   ├── download.py        Download, hash-check and cache weights (stdlib only)
-│   ├── session.py         Remover: owns the ONNX session, runs the pipeline
-│   ├── processing.py      Pure image math: preprocess, postprocess, refine, cutout, trim
-│   ├── images.py          Decode any input (bytes / path / PIL / numpy), encode output
-│   ├── cli.py             `bgremover` command: remove, models, download, serve
-│   └── server/            Optional HTTP API (installed with the [api] extra)
-│       ├── app.py         FastAPI app, routes, error handling, bounded worker pool
-│       ├── config.py      Settings read from BGREMOVER_* environment variables
-│       └── fetch.py       SSRF-safe image fetching for the URL route
-├── tests/                 pytest suite (fake ONNX session; real models with -m model)
-├── .github/workflows/
-│   ├── ci.yml             Lint, test on 3.10-3.13, build the package, smoke-test Docker
-│   └── publish.yml        Publish to PyPI when a GitHub release is published
-├── Dockerfile             Two stages: bake weights in, then a slim non-root runtime
-└── pyproject.toml         Package metadata, extras, ruff and pytest config
+snipbg models                                    # list models, show what is cached
+snipbg download u2net isnet-general-use          # pre-fetch weights
+snipbg download --all
+snipbg download --check u2net                    # re-hash a cached file
+snipbg serve --port 3001                         # run the HTTP API
 ```
 
-How a request flows:
+`snipbg remove --help` lists every option. They are the same options as the
+library: `--refine`, `--erode`, `--blur`, `--foreground-threshold`,
+`--background-threshold`, `--bg`, `--trim`, `--format` and `--quality`.
 
-```
-input (bytes / path / PIL / numpy)
-  -> images.load_image          decode to an RGB PIL image
-  -> processing.preprocess      resize to the model's input, normalise, NCHW tensor
-  -> onnxruntime                run the segmentation model (session.Remover)
-  -> processing.postprocess     scale the mask back to the image size
-  -> processing.refine_mask     optional: harden + feather the edge
-  -> processing.cutout / trim / apply_background
-  -> images.encode_image        same type out as came in
-```
+## Python library
 
-The core library never imports the `server` package, and `processing.py` does no
-I/O, so each layer can be tested on its own.
+`remove()` returns the type it is given:
 
-## Library
-
-`remove()` returns the same type you give it: bytes in, bytes out; a PIL image
-in, a PIL image out; a numpy array in, a numpy array out; a path in, a PIL image
-out.
+| Input | Output |
+| --- | --- |
+| `bytes` | `bytes` (PNG unless `output_format` says otherwise) |
+| file path | `PIL.Image` (RGBA) |
+| `PIL.Image` | `PIL.Image` (RGBA) |
+| numpy array | numpy array (RGBA) |
 
 ```python
-from bgremover import remove, Remover
+from snipbg import remove, Remover
 
-png_bytes = remove(jpeg_bytes)                     # -> bytes (PNG)
-image     = remove("photo.jpg")                    # -> PIL.Image (RGBA)
-array     = remove(numpy_rgb)                      # -> numpy array (RGBA)
+png_bytes = remove(jpeg_bytes)
+image     = remove("photo.jpg")
+array     = remove(numpy_rgb)
 
-# Reuse one model across many images - the session is built once.
+# Batch work: build the model session once and reuse it.
 remover = Remover("isnet-general-use")
 for path in paths:
-    remover.remove(path).save(path.with_suffix(".png"))
+    remover.remove(path, refine=True).save(path.with_suffix(".png"))
 ```
 
-Options for `remove()` / `Remover.remove()`:
+Options for `remove()` and `Remover.remove()`:
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -119,31 +122,14 @@ Options for `remove()` / `Remover.remove()`:
 | `output_format` | `"PNG"` | Encoding used when the input was bytes |
 | `quality` | `None` | JPEG/WEBP quality when the input was bytes |
 
-`Remover` is lazy and thread-safe: constructing one touches neither the network
-nor the disk, and the ONNX session is built on first use and then shared.
-
-## CLI
-
-```bash
-bgremover remove photo.jpg                        # -> photo_nobg.png
-bgremover remove photo.jpg -o out.png --refine --trim
-bgremover remove *.jpg -o cutouts/ -m isnet-general-use
-bgremover remove photo.jpg --bg white -o flat.jpg
-bgremover remove photo.jpg --only-mask -o mask.png
-cat photo.jpg | bgremover remove - > out.png
-
-bgremover models                                  # list models, show what is cached
-bgremover download u2net isnet-general-use        # pre-fetch weights
-bgremover download --all
-bgremover download --check u2net                  # re-hash a cached file
-bgremover serve --port 3001                       # run the HTTP API
-```
+`Remover` is lazy and thread-safe. Creating one does not touch the network or
+the disk. The ONNX session is built on first use and then shared across threads.
 
 ## HTTP API
 
 ```bash
-pip install "bgremover-onnx[api]"
-bgremover serve --port 3001          # docs at http://localhost:3001/docs
+pip install "snipbg[api]"
+snipbg serve --port 3001          # interactive docs at http://localhost:3001/docs
 ```
 
 | Route | What it does |
@@ -163,33 +149,14 @@ curl -X POST -H "Content-Type: application/json" \
   http://localhost:3001/remove-background-url --output out.png
 ```
 
-Both routes accept the same options as the library: `model`, `only_mask`,
-`refine`, `background`, `trim`, `format`, `quality` — as form fields on the
-upload route, as JSON keys on the URL route.
+Both routes take the library's options: `model`, `only_mask`, `refine`,
+`background`, `trim`, `format`, `quality`. Send them as form fields on the
+upload route and as JSON keys on the URL route. Errors are always
+`{"error": "..."}` with a 4xx or 5xx status.
 
-Errors are always `{"error": "..."}` with a 4xx or 5xx status.
-
-### Server environment variables
-
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `BGREMOVER_MAX_UPLOAD_BYTES` | `10485760` | Upload / fetch size limit (10 MB) |
-| `BGREMOVER_MODELS` | the six models ≤ 180 MB | Comma-separated allow-list |
-| `BGREMOVER_DEFAULT_MODEL` | `u2net` | Model used when a request names none |
-| `BGREMOVER_MAX_CONCURRENCY` | `2` | Inferences allowed to run at once |
-| `BGREMOVER_FETCH_TIMEOUT` | `15` | Seconds allowed for fetching a remote image |
-| `BGREMOVER_MAX_REDIRECTS` | `3` | Redirect hops, each re-checked |
-| `BGREMOVER_ALLOW_PRIVATE_URLS` | `false` | Let URL fetches reach private addresses |
-| `BGREMOVER_CORS_ORIGINS` | `*` | Comma-separated CORS origins |
-| `BGREMOVER_PRELOAD` | `false` | Load the default model at startup |
-
-Library-wide: `BGREMOVER_HOME` (cache directory),
-`BGREMOVER_MODEL_BASE_URL` (weights mirror), `BGREMOVER_PROVIDERS`
-(onnxruntime execution providers), `BGREMOVER_NUM_THREADS`.
-
-The URL route is deliberately strict: only `http`/`https`, and the host must
-resolve to a public address — on every redirect hop too, so a public URL cannot
-bounce a request into `169.254.169.254` or your private network.
+The URL route accepts only `http` and `https`, and the host must resolve to a
+public address. Each redirect hop is checked again, so a public URL cannot
+redirect the server to `169.254.169.254` or another private address.
 
 ## Models
 
@@ -204,45 +171,110 @@ bounce a request into `169.254.169.254` or your private network.
 | `birefnet-general-lite` | 214 MB | 1024² | MIT | Best quality that fits in ~8 GB RAM |
 | `birefnet-general` | 928 MB | 1024² | MIT | Highest quality; needs a GPU or 16 GB+ RAM |
 
-Every entry carries a SHA-256 that is checked on download; a mismatch is
-discarded rather than cached.
+**Picking one:** start with `u2net`. Use `u2netp` when speed or size matters
+most, `isnet-general-use` for cleaner edges, and `birefnet-general-lite` when
+quality matters more than speed.
 
-The two BiRefNet models are **not** in the server's default allow-list: they are
-large and memory-hungry. Add them with `BGREMOVER_MODELS` only on a machine that
-can hold them.
+Every download is checked against the model's SHA-256. A file that does not
+match is thrown away instead of being cached. The weights are hosted on
+[rembg](https://github.com/danielgatis/rembg)'s releases page. snipbg does its
+own preprocessing and postprocessing and does not depend on rembg.
 
 ## Docker
 
 ```bash
-docker build -t bgremover .                       # bakes in u2net
-docker build --build-arg MODELS=u2netp,silueta -t bgremover .
-docker run -p 3001:3001 bgremover
+docker build -t snipbg .                                  # bakes in u2net
+docker build --build-arg MODELS=u2netp,silueta -t snipbg .
+docker run -p 3001:3001 snipbg
 ```
 
-The weights are downloaded in a separate build stage and copied into the final
-image, so a container does not fetch a model on its first request. Set
-`BGREMOVER_MODELS` at run time to match what you baked in.
+The weights are downloaded in a separate build stage and copied into a slim
+runtime image that runs as a non-root user, so the first request does not
+trigger a download. If you bake in models other than the default, set
+`SNIPBG_MODELS` at run time to the same list.
+
+## Configuration
+
+All settings are environment variables.
+
+**Library and CLI**
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `SNIPBG_HOME` | `~/.cache/snipbg` | Where weights are cached |
+| `SNIPBG_MODEL_BASE_URL` | rembg releases | Mirror to download weights from |
+| `SNIPBG_PROVIDERS` | onnxruntime default | Comma-separated execution providers |
+| `SNIPBG_NUM_THREADS` | onnxruntime default | Intra-op thread count |
+
+**HTTP server**
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `SNIPBG_MODELS` | the six models ≤ 180 MB | Comma-separated allow-list |
+| `SNIPBG_DEFAULT_MODEL` | `u2net` | Model used when a request names none |
+| `SNIPBG_MAX_UPLOAD_BYTES` | `10485760` | Upload and fetch size limit (10 MB) |
+| `SNIPBG_MAX_CONCURRENCY` | `2` | Inferences allowed to run at once |
+| `SNIPBG_FETCH_TIMEOUT` | `15` | Seconds allowed for fetching a remote image |
+| `SNIPBG_MAX_REDIRECTS` | `3` | Redirect hops, each one checked again |
+| `SNIPBG_ALLOW_PRIVATE_URLS` | `false` | Let URL fetches reach private addresses |
+| `SNIPBG_CORS_ORIGINS` | `*` | Comma-separated CORS origins |
+| `SNIPBG_PRELOAD` | `false` | Load the default model at startup |
+
+The two BiRefNet models are left out of the default `SNIPBG_MODELS` list
+because they are large and use a lot of memory. Add them only on a machine
+with enough RAM.
+
+## How it works
+
+```
+input (bytes / path / PIL / numpy)
+  -> images.load_image          decode to an RGB PIL image
+  -> processing.preprocess      resize to the model's input, normalise, NCHW tensor
+  -> onnxruntime                run the segmentation model (session.Remover)
+  -> processing.postprocess     scale the mask back to the image size
+  -> processing.refine_mask     optional: harden + feather the edge
+  -> processing.cutout / trim / apply_background
+  -> images.encode_image        same type out as came in
+```
+
+```
+src/snipbg/
+├── __init__.py        Public API, resolved lazily (remove, Remover, MODELS, ...)
+├── models.py          Model registry: URL, SHA-256, input size, normalisation
+├── download.py        Download, hash-check and cache weights (stdlib only)
+├── session.py         Remover: owns the ONNX session, runs the pipeline
+├── processing.py      Pure image math: preprocess, postprocess, refine, cutout, trim
+├── images.py          Decode any input, encode the output
+├── cli.py             `snipbg` command: remove, models, download, serve
+└── server/            Optional HTTP API (the [api] extra)
+    ├── app.py         FastAPI app, routes, error handling, bounded worker pool
+    ├── config.py      Settings read from SNIPBG_* environment variables
+    └── fetch.py       SSRF-safe image fetching for the URL route
+```
+
+The core library never imports `server`, and `processing.py` does no I/O, so
+each layer can be tested on its own.
 
 ## Development
 
 ```bash
-git clone https://github.com/asimmakhmudov/bgremover.git
-cd bgremover
-
-# with uv
-uv venv && uv pip install -e ".[dev]"
-
-# or with pip
-python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
+git clone https://github.com/asimmakhmudov/snipbg.git
+cd snipbg
+uv venv && uv pip install -e ".[dev]"     # or: python -m venv .venv && pip install -e ".[dev]"
 
 pytest -q                     # fast: a fake ONNX session, no network
 pytest -q -m model            # also runs real weights (downloads ~5 MB)
 ruff check src tests && ruff format --check src tests
 ```
 
-Contributions are welcome. Please open an issue first for larger changes, and
-keep `pytest -q` and `ruff` green.
+CI lints, runs the tests on Python 3.10–3.13, builds the package and
+smoke-tests the Docker image. Publishing a GitHub release uploads the package
+to PyPI.
+
+Contributions are welcome. Please open an issue before starting a larger
+change, and make sure `pytest -q` and `ruff` pass.
 
 ## License
 
-MIT. The model weights carry their own licenses, listed in the table above.
+MIT. The model weights have their own licenses, listed in the [Models](#models)
+table.

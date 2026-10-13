@@ -12,9 +12,9 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from bgremover import get_remover
-from bgremover.download import is_cached, model_path, verify_model
-from bgremover.models import get_spec
+from snipbg import get_remover
+from snipbg.download import is_cached, model_path, verify_model
+from snipbg.models import get_spec
 
 pytestmark = pytest.mark.model
 
@@ -68,7 +68,7 @@ def test_real_cutout_keeps_the_input_size_and_gains_alpha(remover, photo):
 
 def test_the_graph_output_matches_the_spec(remover, photo):
     """Guards the sigmoid flag: a wrong one silently ruins every mask."""
-    from bgremover.processing import preprocess
+    from snipbg.processing import preprocess
 
     spec = get_spec(MODEL)
     session = remover.session

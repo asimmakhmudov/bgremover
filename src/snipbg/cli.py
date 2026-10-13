@@ -1,4 +1,4 @@
-"""Command line interface: ``bgremover remove|download|models|serve``."""
+"""Command line interface: ``snipbg remove|download|models|serve``."""
 
 from __future__ import annotations
 
@@ -11,24 +11,24 @@ from .models import DEFAULT_MODEL, MODELS, get_spec
 
 _EPILOG = """\
 examples:
-  bgremover remove photo.jpg
-  bgremover remove photo.jpg -o out.png --refine --trim
-  bgremover remove *.jpg -o cutouts/ -m isnet-general-use
-  cat photo.jpg | bgremover remove - > out.png
-  bgremover remove photo.jpg --bg white -o flat.jpg
-  bgremover download u2net isnet-general-use
-  bgremover serve --port 3001
+  snipbg remove photo.jpg
+  snipbg remove photo.jpg -o out.png --refine --trim
+  snipbg remove *.jpg -o cutouts/ -m isnet-general-use
+  cat photo.jpg | snipbg remove - > out.png
+  snipbg remove photo.jpg --bg white -o flat.jpg
+  snipbg download u2net isnet-general-use
+  snipbg serve --port 3001
 """
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="bgremover",
+        prog="snipbg",
         description="Remove image backgrounds with ONNX segmentation models.",
         epilog=_EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--version", action="version", version=f"bgremover {__version__}")
+    parser.add_argument("--version", action="version", version=f"snipbg {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # remove ----------------------------------------------------------------
@@ -190,7 +190,7 @@ def _cmd_download(args: argparse.Namespace) -> int:
                 print(f"{spec.name}: not cached")
                 continue
             ok = verify_model(spec)
-            print(f"{spec.name}: {'ok' if ok else 'CORRUPT - re-download with bgremover download'}")
+            print(f"{spec.name}: {'ok' if ok else 'CORRUPT - re-download with snipbg download'}")
             failures += 0 if ok else 1
             continue
 
@@ -257,13 +257,13 @@ def _cmd_serve(args: argparse.Namespace) -> int:
         import uvicorn
     except ImportError:
         print(
-            'error: the API needs the extra dependencies: pip install "bgremover-onnx[api]"',
+            'error: the API needs the extra dependencies: pip install "snipbg[api]"',
             file=sys.stderr,
         )
         return 1
 
     uvicorn.run(
-        "bgremover.server.app:app",
+        "snipbg.server.app:app",
         host=args.host,
         port=args.port,
         reload=args.reload,

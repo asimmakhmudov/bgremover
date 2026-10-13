@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from bgremover.processing import (
+from snipbg.processing import (
     apply_background,
     cutout,
     postprocess,

@@ -10,7 +10,7 @@ import os
 from dataclasses import dataclass
 
 #: Weight files live on rembg's release page. No rembg code is used; this is
-#: only where the ONNX files are hosted. Point ``BGREMOVER_MODEL_BASE_URL`` at a
+#: only where the ONNX files are hosted. Point ``SNIPBG_MODEL_BASE_URL`` at a
 #: mirror to download from somewhere else.
 DEFAULT_MODEL_BASE_URL = "https://github.com/danielgatis/rembg/releases/download/v0.0.0"
 
@@ -23,7 +23,7 @@ _IMAGENET_STD = (0.229, 0.224, 0.225)
 
 def model_base_url() -> str:
     """Base URL weights are downloaded from, honouring the env override."""
-    return os.environ.get("BGREMOVER_MODEL_BASE_URL", DEFAULT_MODEL_BASE_URL).rstrip("/")
+    return os.environ.get("SNIPBG_MODEL_BASE_URL", DEFAULT_MODEL_BASE_URL).rstrip("/")
 
 
 @dataclass(frozen=True)

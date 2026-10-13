@@ -173,7 +173,7 @@ async def index(request: Request) -> dict[str, Any]:
     return {
         "name": "Background Remover API",
         "version": __version__,
-        "engine": "bgremover",
+        "engine": "snipbg",
         "models": list(settings.allowed_models),
         "default_model": settings.default_model,
         "endpoints": {

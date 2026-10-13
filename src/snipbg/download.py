@@ -17,7 +17,7 @@ from pathlib import Path
 from .models import ModelSpec, get_spec
 
 _CHUNK = 1024 * 256
-_USER_AGENT = "bgremover (+https://github.com/asimmakhmudov/bgremover)"
+_USER_AGENT = "snipbg (+https://github.com/asimmakhmudov/snipbg)"
 
 ProgressFn = Callable[[int, int], None]
 
@@ -29,15 +29,15 @@ class DownloadError(RuntimeError):
 def cache_dir() -> Path:
     """Directory holding downloaded weights.
 
-    ``BGREMOVER_HOME`` wins; otherwise ``$XDG_CACHE_HOME/bgremover``, falling
-    back to ``~/.cache/bgremover``.
+    ``SNIPBG_HOME`` wins; otherwise ``$XDG_CACHE_HOME/snipbg``, falling
+    back to ``~/.cache/snipbg``.
     """
-    env = os.environ.get("BGREMOVER_HOME")
+    env = os.environ.get("SNIPBG_HOME")
     if env:
         return Path(env).expanduser()
     xdg = os.environ.get("XDG_CACHE_HOME")
     base = Path(xdg).expanduser() if xdg else Path.home() / ".cache"
-    return base / "bgremover"
+    return base / "snipbg"
 
 
 def model_path(spec: ModelSpec | str) -> Path:

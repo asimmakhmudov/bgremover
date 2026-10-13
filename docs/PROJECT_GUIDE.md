@@ -1,12 +1,12 @@
-# bgremover: project guide
+# snipbg: project guide
 
 My own notes on how this project is put together, how to run it, and how to
 release it. The public-facing docs are in [`README.md`](../README.md).
 
-- PyPI name: **`bgremover-onnx`** (plain `bgremover` was rejected as too similar
-  to the existing `bg-remover`); import name `bgremover`; CLI `bgremover`
-- Repo: https://github.com/asimmakhmudov/bgremover
-- Version lives in one place: `src/bgremover/__init__.py` (`__version__`)
+- PyPI name: **`snipbg`** (plain `snipbg` was rejected as too similar
+  to the existing `bg-remover`); import name `snipbg`; CLI `snipbg`
+- Repo: https://github.com/asimmakhmudov/snipbg
+- Version lives in one place: `src/snipbg/__init__.py` (`__version__`)
 - Python 3.10+; build backend: hatchling
 
 ---
@@ -17,9 +17,9 @@ A background remover with three entry points over one core:
 
 | Entry point | Install | Used as |
 | --- | --- | --- |
-| Library | `pip install bgremover-onnx` | `from bgremover import remove` |
-| CLI | same | `bgremover remove photo.jpg` |
-| HTTP API | `pip install "bgremover-onnx[api]"` | `bgremover serve` (FastAPI + uvicorn) |
+| Library | `pip install snipbg` | `from snipbg import remove` |
+| CLI | same | `snipbg remove photo.jpg` |
+| HTTP API | `pip install "snipbg[api]"` | `snipbg serve` (FastAPI + uvicorn) |
 
 It runs pretrained segmentation models (U²-Net, IS-Net, BiRefNet) exported to
 ONNX. The inference code is my own: numpy and Pillow do the image math and
@@ -46,7 +46,7 @@ were kept so existing clients still work.
 | `processing.py` | `preprocess`, `postprocess`, `refine_mask`, `cutout`, `apply_background`, `trim` | Pillow, numpy (no I/O) |
 | `session.py` | `Remover` (lazy, thread-safe ONNX session), `get_remover()` cache, `remove()` | onnxruntime |
 | `cli.py` | argparse CLI: `remove`, `models`, `download`, `serve` | the above |
-| `server/config.py` | `Settings` dataclass read from `BGREMOVER_*` env vars | stdlib |
+| `server/config.py` | `Settings` dataclass read from `SNIPBG_*` env vars | stdlib |
 | `server/fetch.py` | URL fetching with an SSRF guard (public IPs only, every redirect re-checked) | stdlib |
 | `server/app.py` | `create_app()`: routes, error shape, upload limit, `CapacityLimiter` worker pool | FastAPI |
 
@@ -68,7 +68,7 @@ encode / convert                  -> bytes in -> bytes out, numpy in -> numpy ou
 ### Design rules (enforced by `tests/test_architecture.py`)
 
 1. Never depend on or import `rembg`.
-2. `bgremover.server` is optional. The core library must never import it or
+2. `snipbg.server` is optional. The core library must never import it or
    FastAPI.
 3. `processing.py` has no ONNX, network or file I/O. It is pure functions.
 4. `models.py`, `download.py` and `__init__.py` use only the stdlib. The Docker
@@ -84,9 +84,9 @@ test.
 
 ### Model cache
 
-- Default location: `~/.cache/bgremover/` (or `$XDG_CACHE_HOME/bgremover`)
-- Override: `BGREMOVER_HOME=/some/dir`
-- Mirror: `BGREMOVER_MODEL_BASE_URL=https://my-mirror/...`
+- Default location: `~/.cache/snipbg/` (or `$XDG_CACHE_HOME/snipbg`)
+- Override: `SNIPBG_HOME=/some/dir`
+- Mirror: `SNIPBG_MODEL_BASE_URL=https://my-mirror/...`
 - Each download is SHA-256 checked. A mismatch is deleted, never cached.
 
 ---
@@ -119,7 +119,7 @@ extra pulls in the API deps plus pytest, httpx, ruff, build and twine.
 ### Library
 
 ```python
-from bgremover import remove, Remover
+from snipbg import remove, Remover
 
 remove("photo.jpg").save("out.png")              # path in -> PIL out
 
@@ -131,19 +131,19 @@ png = remover.remove(open("a.jpg", "rb").read(), refine=True, trim_border=True)
 ### CLI
 
 ```bash
-bgremover --version
-bgremover models                          # table, shows what is cached
-bgremover models --json
-bgremover download u2net                  # pre-fetch weights
-bgremover download --all
-bgremover download --check u2net          # re-verify the hash of a cached file
+snipbg --version
+snipbg models                          # table, shows what is cached
+snipbg models --json
+snipbg download u2net                  # pre-fetch weights
+snipbg download --all
+snipbg download --check u2net          # re-verify the hash of a cached file
 
-bgremover remove photo.jpg                # -> photo_nobg.png
-bgremover remove photo.jpg -o out.png --refine --trim
-bgremover remove *.jpg -o cutouts/ -m u2netp
-bgremover remove photo.jpg --bg white -o flat.jpg
-bgremover remove photo.jpg --only-mask -o mask.png
-cat photo.jpg | bgremover remove - > out.png
+snipbg remove photo.jpg                # -> photo_nobg.png
+snipbg remove photo.jpg -o out.png --refine --trim
+snipbg remove *.jpg -o cutouts/ -m u2netp
+snipbg remove photo.jpg --bg white -o flat.jpg
+snipbg remove photo.jpg --only-mask -o mask.png
+cat photo.jpg | snipbg remove - > out.png
 ```
 
 Exit code is 1 if any input failed, so it works in scripts.
@@ -151,7 +151,7 @@ Exit code is 1 if any input failed, so it works in scripts.
 ### HTTP API (development)
 
 ```bash
-bgremover serve --port 3001 --reload
+snipbg serve --port 3001 --reload
 # Swagger UI: http://localhost:3001/docs
 # ReDoc:      http://localhost:3001/redoc
 
@@ -167,48 +167,48 @@ curl -X POST -H "Content-Type: application/json" \
 ### HTTP API (production, without Docker)
 
 ```bash
-pip install "bgremover-onnx[api]"
-export BGREMOVER_PRELOAD=true BGREMOVER_MAX_CONCURRENCY=2
-bgremover serve --host 0.0.0.0 --port 3001 --workers 2
+pip install "snipbg[api]"
+export SNIPBG_PRELOAD=true SNIPBG_MAX_CONCURRENCY=2
+snipbg serve --host 0.0.0.0 --port 3001 --workers 2
 ```
 
 Each worker process loads its own copy of every model it uses, so plan RAM as
-workers × model size. Within one worker, `BGREMOVER_MAX_CONCURRENCY` caps how
+workers × model size. Within one worker, `SNIPBG_MAX_CONCURRENCY` caps how
 many inferences run at once.
 
 ### Docker
 
 ```bash
-docker build -t bgremover .                                   # bakes u2net in
-docker build --build-arg MODELS=u2netp,silueta -t bgremover:small .
-docker run --rm -p 3001:3001 bgremover
+docker build -t snipbg .                                   # bakes u2net in
+docker build --build-arg MODELS=u2netp,silueta -t snipbg:small .
+docker run --rm -p 3001:3001 snipbg
 docker run --rm -p 3001:3001 \
-  -e BGREMOVER_MODELS=u2netp,silueta -e BGREMOVER_DEFAULT_MODEL=u2netp \
-  bgremover:small
+  -e SNIPBG_MODELS=u2netp,silueta -e SNIPBG_DEFAULT_MODEL=u2netp \
+  snipbg:small
 ```
 
 The image runs as uid 10001, has a `HEALTHCHECK` on `/health`, and reads the port
 from `$PORT` (default 3001), which suits Render, Railway and Fly.io. Keep
-`BGREMOVER_MODELS` in line with the `MODELS` build arg, or the first request
+`SNIPBG_MODELS` in line with the `MODELS` build arg, or the first request
 for a model that isn't baked in will download it at runtime.
 
 ### Environment variables (quick reference)
 
 | Variable | Default | Scope |
 | --- | --- | --- |
-| `BGREMOVER_HOME` | `~/.cache/bgremover` | weight cache |
-| `BGREMOVER_MODEL_BASE_URL` | rembg releases | weight mirror |
-| `BGREMOVER_PROVIDERS` | onnxruntime default | e.g. `CUDAExecutionProvider,CPUExecutionProvider` |
-| `BGREMOVER_NUM_THREADS` | onnxruntime default | intra-op threads |
-| `BGREMOVER_MAX_UPLOAD_BYTES` | `10485760` | server |
-| `BGREMOVER_MODELS` | six models ≤ 180 MB | server allow-list |
-| `BGREMOVER_DEFAULT_MODEL` | `u2net` | server |
-| `BGREMOVER_MAX_CONCURRENCY` | `2` | server |
-| `BGREMOVER_FETCH_TIMEOUT` | `15` | server, URL route |
-| `BGREMOVER_MAX_REDIRECTS` | `3` | server, URL route |
-| `BGREMOVER_ALLOW_PRIVATE_URLS` | `false` | server, URL route (keep false in prod) |
-| `BGREMOVER_CORS_ORIGINS` | `*` | server |
-| `BGREMOVER_PRELOAD` | `false` | server: load the default model at startup |
+| `SNIPBG_HOME` | `~/.cache/snipbg` | weight cache |
+| `SNIPBG_MODEL_BASE_URL` | rembg releases | weight mirror |
+| `SNIPBG_PROVIDERS` | onnxruntime default | e.g. `CUDAExecutionProvider,CPUExecutionProvider` |
+| `SNIPBG_NUM_THREADS` | onnxruntime default | intra-op threads |
+| `SNIPBG_MAX_UPLOAD_BYTES` | `10485760` | server |
+| `SNIPBG_MODELS` | six models ≤ 180 MB | server allow-list |
+| `SNIPBG_DEFAULT_MODEL` | `u2net` | server |
+| `SNIPBG_MAX_CONCURRENCY` | `2` | server |
+| `SNIPBG_FETCH_TIMEOUT` | `15` | server, URL route |
+| `SNIPBG_MAX_REDIRECTS` | `3` | server, URL route |
+| `SNIPBG_ALLOW_PRIVATE_URLS` | `false` | server, URL route (keep false in prod) |
+| `SNIPBG_CORS_ORIGINS` | `*` | server |
+| `SNIPBG_PRELOAD` | `false` | server: load the default model at startup |
 
 ---
 
@@ -238,8 +238,8 @@ One upload to PyPI makes the package available to **both** pip and uv, since uv
 installs from PyPI too:
 
 ```bash
-pip install bgremover-onnx
-uv add bgremover-onnx        # or: uv pip install bgremover-onnx / uvx --from bgremover-onnx bgremover
+pip install snipbg
+uv add snipbg        # or: uv pip install snipbg / uvx --from snipbg snipbg
 ```
 
 ### One-time setup
@@ -248,20 +248,20 @@ uv add bgremover-onnx        # or: uv pip install bgremover-onnx / uvx --from bg
    (PyPI requires it).
 2. Pick **one** way to authenticate:
    - **Trusted Publishing (recommended, no tokens).** On PyPI, open
-     https://pypi.org/manage/project/bgremover-onnx/settings/publishing/ and add a
-     GitHub publisher: owner `asimmakhmudov`, repo `bgremover`, workflow
+     https://pypi.org/manage/project/snipbg/settings/publishing/ and add a
+     GitHub publisher: owner `asimmakhmudov`, repo `snipbg`, workflow
      `publish.yml`, environment `pypi`. On GitHub,
      go to *Settings -> Environments* and create an environment named `pypi`.
      After this, publishing a GitHub release uploads to PyPI automatically.
    - **API token (manual uploads).** PyPI -> *Account settings -> API tokens*. Use
      an "Entire account" scope for the first upload (the project doesn't exist
-     yet), then replace it with a token scoped to `bgremover`.
+     yet), then replace it with a token scoped to `snipbg`.
 
 ### Release checklist
 
 ```bash
 # 1. bump the version
-#    edit src/bgremover/__init__.py -> __version__ = "2.0.1"
+#    edit src/snipbg/__init__.py -> __version__ = "2.0.1"
 
 # 2. make sure everything is green
 ruff check src tests && ruff format --check src tests
@@ -273,7 +273,7 @@ uv build                       # or: python -m build
 uvx twine check dist/*         # README renders correctly on PyPI
 
 # 4. smoke-test the wheel in a throwaway env
-uv run --isolated --with dist/*.whl bgremover --version
+uv run --isolated --with dist/*.whl snipbg --version
 
 # 5a. publish via GitHub (Trusted Publishing)
 git commit -am "Release 2.0.1" && git tag v2.0.1 && git push --follow-tags
@@ -289,7 +289,7 @@ Optional dry run on TestPyPI first:
 ```bash
 uv publish --publish-url https://test.pypi.org/legacy/ --token pypi-TESTTOKEN
 uv pip install --index-url https://test.pypi.org/simple/ \
-               --extra-index-url https://pypi.org/simple/ bgremover
+               --extra-index-url https://pypi.org/simple/ snipbg
 ```
 
 Things to remember:
@@ -302,9 +302,9 @@ Things to remember:
 ### Verify after a release
 
 ```bash
-uvx --refresh --from bgremover-onnx bgremover --version
-uvx --refresh --from "bgremover-onnx[api]" bgremover serve --port 3001
-pip install -U bgremover && python -c "import bgremover; print(bgremover.__version__)"
+uvx --refresh --from snipbg snipbg --version
+uvx --refresh --from "snipbg[api]" snipbg serve --port 3001
+pip install -U snipbg && python -c "import snipbg; print(snipbg.__version__)"
 ```
 
 ---
@@ -317,7 +317,7 @@ pip install -U bgremover && python -c "import bgremover; print(bgremover.__versi
 2. If it's ≤ ~250 MB and generally useful, add it to `DEFAULT_ALLOWED_MODELS` in
    `server/config.py`.
 3. Add a row to the model table in `README.md`.
-4. `pytest -q`, then try it for real: `bgremover remove sample.jpg -m <name>`.
+4. `pytest -q`, then try it for real: `snipbg remove sample.jpg -m <name>`.
 
 ---
 
@@ -325,10 +325,10 @@ pip install -U bgremover && python -c "import bgremover; print(bgremover.__versi
 
 | Symptom | Cause / fix |
 | --- | --- |
-| `error: the API needs the extra dependencies` | `pip install "bgremover-onnx[api]"` |
-| `DownloadError ... SHA-256 mismatch` | Bad or partial download. Run `bgremover download --check <m>`, then download it again |
-| First request is very slow | Weights are downloading. Pre-fetch with `bgremover download`, set `BGREMOVER_PRELOAD=true`, or bake them into Docker |
-| URL route returns 400 "refusing to fetch ... non-public address" | SSRF guard working as intended. Only set `BGREMOVER_ALLOW_PRIVATE_URLS=true` in local dev |
-| 413 on upload | Raise `BGREMOVER_MAX_UPLOAD_BYTES` |
+| `error: the API needs the extra dependencies` | `pip install "snipbg[api]"` |
+| `DownloadError ... SHA-256 mismatch` | Bad or partial download. Run `snipbg download --check <m>`, then download it again |
+| First request is very slow | Weights are downloading. Pre-fetch with `snipbg download`, set `SNIPBG_PRELOAD=true`, or bake them into Docker |
+| URL route returns 400 "refusing to fetch ... non-public address" | SSRF guard working as intended. Only set `SNIPBG_ALLOW_PRIVATE_URLS=true` in local dev |
+| 413 on upload | Raise `SNIPBG_MAX_UPLOAD_BYTES` |
 | Container killed (OOM) | Model too big for the box. Use `u2netp`/`silueta`, or fewer workers |
-| Want GPU | `pip install onnxruntime-gpu` and set `BGREMOVER_PROVIDERS=CUDAExecutionProvider,CPUExecutionProvider` |
+| Want GPU | `pip install onnxruntime-gpu` and set `SNIPBG_PROVIDERS=CUDAExecutionProvider,CPUExecutionProvider` |

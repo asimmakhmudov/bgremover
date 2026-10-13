@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from bgremover.images import (
+from snipbg.images import (
     encode_image,
     flatten_if_opaque,
     format_for_path,
